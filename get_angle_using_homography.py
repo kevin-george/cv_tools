@@ -34,7 +34,6 @@ class DriftDetector:
             cv2.putText(img2, str(counter), tuple(pt2), cv2.FONT_HERSHEY_SIMPLEX,
                         1, 100, 2)
             counter += 1
-        print counter
 
         return img1,img2
 
@@ -153,20 +152,20 @@ class DriftDetector:
         #Ra, ta
         R = self.findRmatFrom_tstar_n(H, ta_star, na, v)
         t = R.dot(ta_star)
-        solutions.append((R, t))
+        solutions.append((R, t, na))
         #Ra, -ta
-        solutions.append((R, -t))
+        solutions.append((R, -t, -na))
         #Rb, tb
         R = self.findRmatFrom_tstar_n(H, tb_star, nb, v)
         t = R.dot(tb_star)
-        solutions.append((R, t))
+        solutions.append((R, t, nb))
         #Rb, -tb
-        solutions.append((R, -t))
+        solutions.append((R, -t, -nb))
 
         return solutions
 
     def find_correct_solution(self, solutions, first_set, second_set):
-        for R, t in solutions:
+        for R, t, n in solutions:
             if not self.check_direction(first_set, second_set, R, t):
                 break
 
@@ -194,8 +193,8 @@ class DriftDetector:
         pts1 = pts1[mask.ravel() == 1]
         pts2 = pts2[mask.ravel() == 1]
 
-        '''#Draw matches
-        img1,img2 = self.drawpoints(gray1, gray2, pts1, pts2)
+        #Draw matches
+        '''img1,img2 = self.drawpoints(gray1, gray2, pts1, pts2)
         plt.subplot(121),plt.imshow(img1)
         plt.subplot(122),plt.imshow(img2)
         plt.show()'''
@@ -216,24 +215,26 @@ class DriftDetector:
                                                                    second_kp,
                                                                    second_kp_desc)
         solutions = self.decompose_homography(G)
+        comp = solutions[0][0] + np.dot(np.float32(solutions[0][1]).T, np.float32(solutions[0][2]))
         R, t = self.find_correct_solution(solutions, first_set, second_set)
         yaw = np.arctan2(R[1][2], R[2][2]) * 180/3.1415
         pitch = np.arctan2(-R[2][0],
                            np.sqrt(R[2][1]*R[2][1] + R[2][2]*R[2][2])) * 180/3.1415
         roll = np.arctan2(R[1][0], R[0][0]) * 180/3.1415
 
-        '''for R, t in solutions:
-            yaw = np.arctan2(R[1][2], R[2][2]) * 180/3.1415
-            pitch = np.arctan2(-R[2][0],
+        '''for R, t, n in solutions:
+            yaw1 = np.arctan2(R[1][2], R[2][2]) * 180/3.1415
+            pitch1 = np.arctan2(-R[2][0],
                            np.sqrt(R[2][1]*R[2][1] + R[2][2]*R[2][2])) * 180/3.1415
-            roll = np.arctan2(R[1][0], R[0][0]) * 180/3.1415
+            roll1 = np.arctan2(R[1][0], R[0][0]) * 180/3.1415
 
-            print "\nRoll: %f, Pitch: %f, Yaw: %f" %(roll , pitch , yaw)'''
+            print "\nRoll: %f, Pitch: %f, Yaw: %f" %(roll1 , pitch1 , yaw1)'''
 
         return roll, pitch, yaw
 
     def analyze_frame(self, frame):
-        return self.sift.detectAndCompute(frame, None)
+        grayscale = cv2.imread(frame, cv2.CV_LOAD_IMAGE_GRAYSCALE)
+        return self.sift.detectAndCompute(grayscale, None)
 
 
 if __name__ == "__main__":
@@ -243,41 +244,9 @@ if __name__ == "__main__":
                                  [0, 0, 1]])
 
     instance = DriftDetector(cam_intrinsics)
-    img1 = "test_set/IMG_280.jpg"
-    img2 = "test_set/IMG_275.jpg"
-    gray1 = cv2.imread(img1,cv2.CV_LOAD_IMAGE_GRAYSCALE)
-    gray2 = cv2.imread(img2,cv2.CV_LOAD_IMAGE_GRAYSCALE)
-    print "\nComparing " + img1 + " and " + img2
-    fkp, fkpd = instance.analyze_frame(gray1)
-    skp, skpd = instance.analyze_frame(gray2)
+    img1 = "data/test_images/IMG_280.jpg"
+    img2 = "data/test_images/IMG_275.jpg"
+    fkp, fkpd = instance.analyze_frame(img1)
+    skp, skpd = instance.analyze_frame(img2)
     r,p,y = instance.get_drift(fkp, fkpd, skp, skpd)
-    print "\n\nRoll: %f, Pitch: %f, Yaw: %f" %(r, p, y)
-
-    '''#Specifying the video to be captured
-    vid = cv2.VideoCapture('VID_20160831_105333.mp4')
-    #In case of video stream, use this
-    #vid = cv2.VideoCapture(0)
-    while(vid.isOpened()):
-        #Reading the frame from the video
-        ret_val, frame = vid.read()
-        if not(ret_val):
-            break
-        #Converting the frame to grayscale
-        if counter == 0:
-            gray1 = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            detector = DriftDetector(cam_intrinsics)
-            first_kp, first_kp_desc = detector.analyze_frame(gray1)
-        elif counter == 68:
-            gray2 = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            second_kp, second_kp_desc = detector.analyze_frame(gray2)
-            roll, pitch, yaw = detector.get_drift(first_kp, first_kp_desc,
-                                                  second_kp, second_kp_desc,
-                                                  gray1, gray2)
-            print "\n\nRoll: %f, Pitch: %f, Yaw: %f" %(roll , pitch , yaw)
-            #Show images being compared
-            plt.subplot(121),plt.imshow(gray1)
-            plt.subplot(122),plt.imshow(gray2)
-            plt.show()
-            break
-        counter += 1
-    vid.release()'''
+    #print "\n\nChosen Roll: %f, Pitch: %f, Yaw: %f" %(r, p, y)
