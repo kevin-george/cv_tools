@@ -172,7 +172,7 @@ class DriftDetector:
         return R, t
 
     def get_homography_and_matches(self, first_kp, first_kp_desc,
-                                   second_kp, second_kp_desc):
+                                   second_kp, second_kp_desc, img1, img2):
         #Perform best matching between frames using nearest neighbors
         matches = self.flann.knnMatch(first_kp_desc, second_kp_desc, k = 2)
 
@@ -194,41 +194,50 @@ class DriftDetector:
         pts2 = pts2[mask.ravel() == 1]
 
         #Draw matches
-        '''img1,img2 = self.drawpoints(gray1, gray2, pts1, pts2)
-        plt.subplot(121),plt.imshow(img1)
-        plt.subplot(122),plt.imshow(img2)
-        plt.show()'''
+        gray1 = cv2.imread(img1, cv2.CV_LOAD_IMAGE_GRAYSCALE)
+        gray2 = cv2.imread(img2, cv2.CV_LOAD_IMAGE_GRAYSCALE)
+        img1_n,img2_n = self.drawpoints(gray1, gray2, pts1, pts2)
+        plt.subplot(121),plt.imshow(img1_n)
+        plt.subplot(122),plt.imshow(img2_n)
+        plt.show()
 
-        #Normalize and homogenize the image coordinates
+        #Homogenize the image coordinates
         first_set = []
         second_set = []
         for i in range(len(pts1)):
-            first_set.append(self.K_inv.dot([pts1[i][0], pts1[i][1], 1.0]))
-            second_set.append(self.K_inv.dot([pts2[i][0], pts2[i][1], 1.0]))
+            first_set.append([pts1[i][0], pts1[i][1], 1.0])
+            second_set.append([pts2[i][0], pts2[i][1], 1.0])
 
         return G, first_set, second_set
 
-    def get_drift(self, first_kp, first_kp_desc, second_kp, second_kp_desc):
+    def get_drift(self, first_kp, first_kp_desc, second_kp, second_kp_desc, img1, img2):
         #Find the homography between the pairs of points and the matches that fit
         G, first_set, second_set = self.get_homography_and_matches(first_kp,
                                                                    first_kp_desc,
                                                                    second_kp,
-                                                                   second_kp_desc)
+                                                                   second_kp_desc, img1, img2)
+
+        print "\nNumber of matched points using LMEDS"
+        print len(first_set)
+        print len(second_set)
+        print "\nHomography computed"
+        print G
         solutions = self.decompose_homography(G)
         comp = solutions[0][0] + np.dot(np.float32(solutions[0][1]).T, np.float32(solutions[0][2]))
-        R, t = self.find_correct_solution(solutions, first_set, second_set)
-        yaw = np.arctan2(R[1][2], R[2][2]) * 180/3.1415
-        pitch = np.arctan2(-R[2][0],
-                           np.sqrt(R[2][1]*R[2][1] + R[2][2]*R[2][2])) * 180/3.1415
-        roll = np.arctan2(R[1][0], R[0][0]) * 180/3.1415
+        roll = pitch = yaw = ""
+        #R, t = self.find_correct_solution(solutions, first_set, second_set)
+        #yaw = np.arctan2(R[1][2], R[2][2]) * 180/3.1415
+        #pitch = np.arctan2(-R[2][0],
+        #                   np.sqrt(R[2][1]*R[2][1] + R[2][2]*R[2][2])) * 180/3.1415
+        #roll = np.arctan2(R[1][0], R[0][0]) * 180/3.1415
 
-        '''for R, t, n in solutions:
+        for R, t, n in solutions:
             yaw1 = np.arctan2(R[1][2], R[2][2]) * 180/3.1415
             pitch1 = np.arctan2(-R[2][0],
                            np.sqrt(R[2][1]*R[2][1] + R[2][2]*R[2][2])) * 180/3.1415
             roll1 = np.arctan2(R[1][0], R[0][0]) * 180/3.1415
 
-            print "\nRoll: %f, Pitch: %f, Yaw: %f" %(roll1 , pitch1 , yaw1)'''
+            print "\nRoll: %f, Pitch: %f, Yaw: %f" %(roll1 , pitch1 , yaw1)
 
         return roll, pitch, yaw
 
@@ -244,9 +253,10 @@ if __name__ == "__main__":
                                  [0, 0, 1]])
 
     instance = DriftDetector(cam_intrinsics)
-    img1 = "data/test_images/IMG_280.jpg"
-    img2 = "data/test_images/IMG_275.jpg"
+    img1 = "data/test_images/IMG_270.jpg"
+    img2 = "data/test_images/IMG_270.jpg"
+    print "\nComparing " + img1 + " and " + img2
     fkp, fkpd = instance.analyze_frame(img1)
     skp, skpd = instance.analyze_frame(img2)
-    r,p,y = instance.get_drift(fkp, fkpd, skp, skpd)
+    r,p,y = instance.get_drift(fkp, fkpd, skp, skpd, img1, img2)
     #print "\n\nChosen Roll: %f, Pitch: %f, Yaw: %f" %(r, p, y)
