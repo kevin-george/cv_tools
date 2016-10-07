@@ -2,7 +2,7 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#orgheadline37">1. True Magnetic North</a>
+<li><a href="#orgheadline38">1. True Magnetic North</a>
 <ul>
 <li><a href="#orgheadline1">1.1. Statement: The image is taken at the magnetic north and we take another image at the same magnetic north. We find the translation and orientation shift vector to estimate the drift. The analysis needs to be done in real-time.</a></li>
 <li><a href="#orgheadline2">1.2. Physical setup: The camera is part of an Android phone and is rotating on its own axis</a></li>
@@ -18,11 +18,11 @@
 <li><a href="#orgheadline7">1.4.2. The camera origin shall remain at the same position</a></li>
 </ul>
 </li>
-<li><a href="#orgheadline36">1.5. Algorithm</a>
+<li><a href="#orgheadline37">1.5. Algorithm</a>
 <ul>
 <li><a href="#orgheadline14">1.5.1. Calibrate camera</a></li>
 <li><a href="#orgheadline17">1.5.2. Estimate drift by computing rotation and translation between the two camera frames</a></li>
-<li><a href="#orgheadline35">1.5.3. Tests</a></li>
+<li><a href="#orgheadline36">1.5.3. Tests</a></li>
 </ul>
 </li>
 </ul>
@@ -31,12 +31,13 @@
 </div>
 </div>
 
-# True Magnetic North<a id="orgheadline37"></a>
+# True Magnetic North<a id="orgheadline38"></a>
 
 ## Statement: The image is taken at the magnetic north and we take another image at the same magnetic north. We find the translation and orientation shift vector to estimate the drift. The analysis needs to be done in real-time.<a id="orgheadline1"></a>
 
-init(magnetic<sub>north</sub><sub>image</sub>)
-drift = get<sub>drift</sub>(estimated<sub>magnetic</sub><sub>north</sub><sub>image</sub>)
+instance = DriftDetector(camera<sub>intrinsics</sub>)
+kp, kpd = instance.analyze<sub>frame</sub>(image) #This will be called twice, once for each image 
+roll, pitch, yaw = instance.get<sub>drift</sub>(kp1, kpd1, kp2, kpd2) #Information about both images is sent
 
 ## Physical setup: The camera is part of an Android phone and is rotating on its own axis<a id="orgheadline2"></a>
 
@@ -52,7 +53,7 @@ drift = get<sub>drift</sub>(estimated<sub>magnetic</sub><sub>north</sub><sub>ima
 
 ### The camera origin shall remain at the same position<a id="orgheadline7"></a>
 
-## Algorithm<a id="orgheadline36"></a>
+## Algorithm<a id="orgheadline37"></a>
 
 ### Calibrate camera<a id="orgheadline14"></a>
 
@@ -90,7 +91,7 @@ drift = get<sub>drift</sub>(estimated<sub>magnetic</sub><sub>north</sub><sub>ima
     3.  Find correct R & t using positive depth constraint
     4.  Compute roll, pitch and yaw using R
 
-### Tests<a id="orgheadline35"></a>
+### Tests<a id="orgheadline36"></a>
 
 1.  WAITING Test cases for calibration module
 
@@ -137,6 +138,8 @@ drift = get<sub>drift</sub>(estimated<sub>magnetic</sub><sub>north</sub><sub>ima
         <col  class="org-right" />
         
         <col  class="org-right" />
+        
+        <col  class="org-right" />
         </colgroup>
         <tbody>
         <tr>
@@ -144,6 +147,7 @@ drift = get<sub>drift</sub>(estimated<sub>magnetic</sub><sub>north</sub><sub>ima
         <td class="org-left">Image 2</td>
         <td class="org-right">true yaw</td>
         <td class="org-right">calc yaw</td>
+        <td class="org-right">matches</td>
         </tr>
         
         
@@ -152,6 +156,7 @@ drift = get<sub>drift</sub>(estimated<sub>magnetic</sub><sub>north</sub><sub>ima
         <td class="org-left">-------</td>
         <td class="org-right">--------</td>
         <td class="org-right">--------</td>
+        <td class="org-right">-------</td>
         </tr>
         
         
@@ -159,7 +164,8 @@ drift = get<sub>drift</sub>(estimated<sub>magnetic</sub><sub>north</sub><sub>ima
         <td class="org-left">IMG<sub>270</sub></td>
         <td class="org-left">IMG<sub>275</sub></td>
         <td class="org-right">5</td>
-        <td class="org-right">3.47</td>
+        <td class="org-right">4.37</td>
+        <td class="org-right">195</td>
         </tr>
         
         
@@ -167,7 +173,8 @@ drift = get<sub>drift</sub>(estimated<sub>magnetic</sub><sub>north</sub><sub>ima
         <td class="org-left">IMG<sub>275</sub></td>
         <td class="org-left">IMG<sub>280</sub></td>
         <td class="org-right">5</td>
-        <td class="org-right">&#xa0;</td>
+        <td class="org-right">6.8</td>
+        <td class="org-right">181</td>
         </tr>
         
         
@@ -175,7 +182,8 @@ drift = get<sub>drift</sub>(estimated<sub>magnetic</sub><sub>north</sub><sub>ima
         <td class="org-left">IMG<sub>270</sub></td>
         <td class="org-left">IMG<sub>280</sub></td>
         <td class="org-right">10</td>
-        <td class="org-right">&#xa0;</td>
+        <td class="org-right">11.96</td>
+        <td class="org-right">173</td>
         </tr>
         
         
@@ -183,15 +191,17 @@ drift = get<sub>drift</sub>(estimated<sub>magnetic</sub><sub>north</sub><sub>ima
         <td class="org-left">IMG<sub>280</sub></td>
         <td class="org-left">IMG<sub>290</sub></td>
         <td class="org-right">10</td>
-        <td class="org-right">&#xa0;</td>
+        <td class="org-right">64.72</td>
+        <td class="org-right">72</td>
         </tr>
         
         
         <tr>
         <td class="org-left">IMG<sub>270</sub></td>
-        <td class="org-left">IMG<sub>275</sub></td>
+        <td class="org-left">IMG<sub>285</sub></td>
         <td class="org-right">15</td>
-        <td class="org-right">&#xa0;</td>
+        <td class="org-right">78.24</td>
+        <td class="org-right">95</td>
         </tr>
         
         
@@ -199,7 +209,8 @@ drift = get<sub>drift</sub>(estimated<sub>magnetic</sub><sub>north</sub><sub>ima
         <td class="org-left">IMG<sub>275</sub></td>
         <td class="org-left">IMG<sub>290</sub></td>
         <td class="org-right">15</td>
-        <td class="org-right">&#xa0;</td>
+        <td class="org-right">161.48</td>
+        <td class="org-right">81</td>
         </tr>
         
         
@@ -207,7 +218,8 @@ drift = get<sub>drift</sub>(estimated<sub>magnetic</sub><sub>north</sub><sub>ima
         <td class="org-left">IMG<sub>270</sub></td>
         <td class="org-left">IMG<sub>290</sub></td>
         <td class="org-right">20</td>
-        <td class="org-right">&#xa0;</td>
+        <td class="org-right">152.48</td>
+        <td class="org-right">59</td>
         </tr>
         
         
@@ -215,7 +227,8 @@ drift = get<sub>drift</sub>(estimated<sub>magnetic</sub><sub>north</sub><sub>ima
         <td class="org-left">IMG<sub>275</sub></td>
         <td class="org-left">IMG<sub>270</sub></td>
         <td class="org-right">-5</td>
-        <td class="org-right">&#xa0;</td>
+        <td class="org-right">-4.72</td>
+        <td class="org-right">201</td>
         </tr>
         
         
@@ -223,7 +236,8 @@ drift = get<sub>drift</sub>(estimated<sub>magnetic</sub><sub>north</sub><sub>ima
         <td class="org-left">IMG<sub>290</sub></td>
         <td class="org-left">IMG<sub>270</sub></td>
         <td class="org-right">-20</td>
-        <td class="org-right">&#xa0;</td>
+        <td class="org-right">-135</td>
+        <td class="org-right">65</td>
         </tr>
         
         
@@ -231,7 +245,12 @@ drift = get<sub>drift</sub>(estimated<sub>magnetic</sub><sub>north</sub><sub>ima
         <td class="org-left">IMG<sub>270</sub></td>
         <td class="org-left">IMG<sub>270</sub></td>
         <td class="org-right">0</td>
-        <td class="org-right">&#xa0;</td>
+        <td class="org-right">0</td>
+        <td class="org-right">500</td>
         </tr>
         </tbody>
         </table>
+    
+    3.  Notes:
+    
+        1.  If the number of matched points drops below 100, the yaw calculated goes haywire
