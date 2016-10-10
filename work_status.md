@@ -125,7 +125,7 @@ roll, pitch, yaw = instance.get<sub>drift</sub>(kp1, kpd1, kp2, kpd2) #Informati
 
     1.  5 images created with 5 degrees yaw between consecutive images for test set
     
-    2.  Results:
+    2.  Results using LMEDS and ORB:
     
         <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
         
@@ -141,25 +141,17 @@ roll, pitch, yaw = instance.get<sub>drift</sub>(kp1, kpd1, kp2, kpd2) #Informati
         
         <col  class="org-right" />
         </colgroup>
+        <thead>
+        <tr>
+        <th scope="col" class="org-left">Image 1</th>
+        <th scope="col" class="org-left">Image 2</th>
+        <th scope="col" class="org-right">true yaw</th>
+        <th scope="col" class="org-right">calc yaw</th>
+        <th scope="col" class="org-right">matches</th>
+        </tr>
+        </thead>
+        
         <tbody>
-        <tr>
-        <td class="org-left">Image 1</td>
-        <td class="org-left">Image 2</td>
-        <td class="org-right">true yaw</td>
-        <td class="org-right">calc yaw</td>
-        <td class="org-right">matches</td>
-        </tr>
-        
-        
-        <tr>
-        <td class="org-left">-------</td>
-        <td class="org-left">-------</td>
-        <td class="org-right">--------</td>
-        <td class="org-right">--------</td>
-        <td class="org-right">-------</td>
-        </tr>
-        
-        
         <tr>
         <td class="org-left">IMG<sub>270</sub></td>
         <td class="org-left">IMG<sub>275</sub></td>
@@ -248,9 +240,19 @@ roll, pitch, yaw = instance.get<sub>drift</sub>(kp1, kpd1, kp2, kpd2) #Informati
         <td class="org-right">0</td>
         <td class="org-right">500</td>
         </tr>
+        
+        
+        <tr>
+        <td class="org-left">IMG<sub>275</sub></td>
+        <td class="org-left">IMG<sub>285</sub></td>
+        <td class="org-right">10</td>
+        <td class="org-right">35.75</td>
+        <td class="org-right">105</td>
+        </tr>
         </tbody>
         </table>
     
     3.  Notes:
     
         1.  If the number of matched points drops below 100, the yaw calculated goes haywire
+        2.  If the points are too close together, the homography is inaccurate. The cases where the calculation is off, the matched points are focused on the 3d printer and nothing on the book case was picked up.

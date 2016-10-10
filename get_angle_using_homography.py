@@ -178,16 +178,30 @@ class DriftDetector:
 
         pts1 = []
         pts2 = []
-        #Lowe's ratio test for outlier detection
+        #Lowe's ratio test
         for m, n in matches:
             if m.distance < 0.7 * n.distance:
                 pts2.append(second_kp[m.trainIdx].pt)
                 pts1.append(first_kp[m.queryIdx].pt)
 
+        #Thin out clusters of matched points
+        '''proximity_mask = np.ones(len(pts1))
+        for i, pt in enumerate(pts1):
+            for j, pt1 in enumerate(pts1):
+                if j > i and proximity_mask[j] != 0:
+                    #print "Comparing " + str(i) + " and " + str(j)
+                    dist = np.linalg.norm(np.float32(pts1[i])-np.float32(pts1[j]))
+                    #print "Distance is " + str(dist)
+                    if dist < 30:
+                        proximity_mask[j] = 0
+                        print "Removed " + str(j)'''
+
         #Compute the Homography
         pts1 = np.float32(pts1)
         pts2 = np.float32(pts2)
-        G, mask = cv2.findHomography(pts1, pts2, cv2.LMEDS)
+        #pts1 = pts1[proximity_mask.ravel() == 1]
+        #pts2 = pts2[proximity_mask.ravel() == 1]
+        G, mask = cv2.findHomography(pts1, pts2, cv2.RANSAC, 0.5)
 
         #Selecting the inliers alone
         pts1 = pts1[mask.ravel() == 1]
@@ -217,7 +231,7 @@ class DriftDetector:
                                                                    second_kp,
                                                                    second_kp_desc, img1, img2)
 
-        print "\nNumber of matched points using LMEDS"
+        print "\nNumber of matched points using RANSAC"
         print len(first_set)
         print len(second_set)
         print "\nHomography computed"
@@ -254,7 +268,7 @@ if __name__ == "__main__":
 
     instance = DriftDetector(cam_intrinsics)
     img1 = "data/test_images/IMG_270.jpg"
-    img2 = "data/test_images/IMG_270.jpg"
+    img2 = "data/test_images/IMG_280.jpg"
     print "\nComparing " + img1 + " and " + img2
     fkp, fkpd = instance.analyze_frame(img1)
     skp, skpd = instance.analyze_frame(img2)
