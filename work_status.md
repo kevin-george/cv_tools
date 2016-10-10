@@ -2,27 +2,33 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#orgheadline38">1. True Magnetic North</a>
+<li><a href="#orgheadline41">1. True Magnetic North</a>
 <ul>
-<li><a href="#orgheadline1">1.1. Statement: The image is taken at the magnetic north and we take another image at the same magnetic north. We find the translation and orientation shift vector to estimate the drift. The analysis needs to be done in real-time.</a></li>
-<li><a href="#orgheadline2">1.2. Physical setup: The camera is part of an Android phone and is rotating on its own axis</a></li>
-<li><a href="#orgheadline5">1.3. Unknowns:</a>
+<li><a href="#orgheadline4">1.1. Statement: The image is taken at the magnetic north and we take another image at the same magnetic north. We find the translation and orientation shift vector to estimate the drift. The analysis needs to be done in real-time.</a>
 <ul>
-<li><a href="#orgheadline3">1.3.1. RPM of movement</a></li>
-<li><a href="#orgheadline4">1.3.2. Orientation of camera</a></li>
+<li><a href="#orgheadline1">1.1.1. instance = DriftDetector(camera<sub>intrinsics</sub>)</a></li>
+<li><a href="#orgheadline2">1.1.2. kp, kpd = instance.analyze<sub>frame</sub>(image) #This will be called twice, once for each image</a></li>
+<li><a href="#orgheadline3">1.1.3. roll, pitch, yaw = instance.get<sub>drift</sub>(kp1, kpd1, kp2, kpd2) #Information about both images is sent</a></li>
 </ul>
 </li>
-<li><a href="#orgheadline8">1.4. Knowns:</a>
+<li><a href="#orgheadline5">1.2. Physical setup: The camera is part of an Android phone and is rotating on its own axis</a></li>
+<li><a href="#orgheadline8">1.3. Unknowns:</a>
 <ul>
-<li><a href="#orgheadline6">1.4.1. Speed of rotation shall be constant(There exists an encoder on the motor)</a></li>
-<li><a href="#orgheadline7">1.4.2. The camera origin shall remain at the same position</a></li>
+<li><a href="#orgheadline6">1.3.1. RPM of movement</a></li>
+<li><a href="#orgheadline7">1.3.2. Orientation of camera</a></li>
 </ul>
 </li>
-<li><a href="#orgheadline37">1.5. Algorithm</a>
+<li><a href="#orgheadline11">1.4. Knowns:</a>
 <ul>
-<li><a href="#orgheadline14">1.5.1. Calibrate camera</a></li>
-<li><a href="#orgheadline17">1.5.2. Estimate drift by computing rotation and translation between the two camera frames</a></li>
-<li><a href="#orgheadline36">1.5.3. Tests</a></li>
+<li><a href="#orgheadline9">1.4.1. Speed of rotation shall be constant(There exists an encoder on the motor)</a></li>
+<li><a href="#orgheadline10">1.4.2. The camera origin shall remain at the same position</a></li>
+</ul>
+</li>
+<li><a href="#orgheadline40">1.5. Algorithm</a>
+<ul>
+<li><a href="#orgheadline17">1.5.1. Calibrate camera</a></li>
+<li><a href="#orgheadline20">1.5.2. Estimate drift by computing rotation and translation between the two camera frames</a></li>
+<li><a href="#orgheadline39">1.5.3. Tests</a></li>
 </ul>
 </li>
 </ul>
@@ -31,31 +37,33 @@
 </div>
 </div>
 
-# True Magnetic North<a id="orgheadline38"></a>
+# True Magnetic North<a id="orgheadline41"></a>
 
-## Statement: The image is taken at the magnetic north and we take another image at the same magnetic north. We find the translation and orientation shift vector to estimate the drift. The analysis needs to be done in real-time.<a id="orgheadline1"></a>
+## Statement: The image is taken at the magnetic north and we take another image at the same magnetic north. We find the translation and orientation shift vector to estimate the drift. The analysis needs to be done in real-time.<a id="orgheadline4"></a>
 
-instance = DriftDetector(camera<sub>intrinsics</sub>)
-kp, kpd = instance.analyze<sub>frame</sub>(image) #This will be called twice, once for each image 
-roll, pitch, yaw = instance.get<sub>drift</sub>(kp1, kpd1, kp2, kpd2) #Information about both images is sent
+### instance = DriftDetector(camera<sub>intrinsics</sub>)<a id="orgheadline1"></a>
 
-## Physical setup: The camera is part of an Android phone and is rotating on its own axis<a id="orgheadline2"></a>
+### kp, kpd = instance.analyze<sub>frame</sub>(image) #This will be called twice, once for each image<a id="orgheadline2"></a>
 
-## Unknowns:<a id="orgheadline5"></a>
+### roll, pitch, yaw = instance.get<sub>drift</sub>(kp1, kpd1, kp2, kpd2) #Information about both images is sent<a id="orgheadline3"></a>
 
-### RPM of movement<a id="orgheadline3"></a>
+## Physical setup: The camera is part of an Android phone and is rotating on its own axis<a id="orgheadline5"></a>
 
-### Orientation of camera<a id="orgheadline4"></a>
+## Unknowns:<a id="orgheadline8"></a>
 
-## Knowns:<a id="orgheadline8"></a>
+### RPM of movement<a id="orgheadline6"></a>
 
-### Speed of rotation shall be constant(There exists an encoder on the motor)<a id="orgheadline6"></a>
+### Orientation of camera<a id="orgheadline7"></a>
 
-### The camera origin shall remain at the same position<a id="orgheadline7"></a>
+## Knowns:<a id="orgheadline11"></a>
 
-## Algorithm<a id="orgheadline37"></a>
+### Speed of rotation shall be constant(There exists an encoder on the motor)<a id="orgheadline9"></a>
 
-### Calibrate camera<a id="orgheadline14"></a>
+### The camera origin shall remain at the same position<a id="orgheadline10"></a>
+
+## Algorithm<a id="orgheadline40"></a>
+
+### Calibrate camera<a id="orgheadline17"></a>
 
 1.  Resize the image to 1000x1000 if the the calibration routine is taking too long
 
@@ -67,7 +75,7 @@ roll, pitch, yaw = instance.get<sub>drift</sub>(kp1, kpd1, kp2, kpd2) #Informati
 
 5.  This gives us the camera intrinsics matrix K
 
-### Estimate drift by computing rotation and translation between the two camera frames<a id="orgheadline17"></a>
+### Estimate drift by computing rotation and translation between the two camera frames<a id="orgheadline20"></a>
 
 1.  Convert image to grayscale
 2.  Use a feature detector method e.g. SIFT/SURF/FAST to detect the keypoints
@@ -91,7 +99,7 @@ roll, pitch, yaw = instance.get<sub>drift</sub>(kp1, kpd1, kp2, kpd2) #Informati
     3.  Find correct R & t using positive depth constraint
     4.  Compute roll, pitch and yaw using R
 
-### Tests<a id="orgheadline36"></a>
+### Tests<a id="orgheadline39"></a>
 
 1.  WAITING Test cases for calibration module
 
@@ -254,5 +262,5 @@ roll, pitch, yaw = instance.get<sub>drift</sub>(kp1, kpd1, kp2, kpd2) #Informati
     
     3.  Notes:
     
-        1.  If the number of matched points drops below 100, the yaw calculated goes haywire
+        1.  <del>If the number of matched points drops below 100, the yaw calculated goes haywire</del>
         2.  If the points are too close together, the homography is inaccurate. The cases where the calculation is off, the matched points are focused on the 3d printer and nothing on the book case was picked up.
