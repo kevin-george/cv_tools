@@ -3,24 +3,28 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 class DriftDetector:
-    def __init__(self, cam_intrinsics):
-        #FLANN parameters
-        FLANN_INDEX_KDTREE = 0
-        #index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
-        index_params= dict(algorithm = 6,
-                           table_number = 12,
-                           key_size = 12,     # 20
-                           multi_probe_level = 2)
-        search_params = dict(checks = 5)
-        self.flann = cv2.FlannBasedMatcher(index_params, search_params)
-
-        #opencv2.4.x
-        self.sift = cv2.ORB()
-        #opencv3.x
-        #self.sift = cv2.xfeatures2d.SIFT_create()
+    def __init__(self, camera_intrinsics, feature_method):
 
         self.K = cam_intrinsics
         self.K_inv = np.linalg.inv(cam_intrinsics)
+        self.method = feature_method
+
+        #FLANN parameters
+        FLANN_INDEX_KDTREE = 0
+        if self.method == "SIFT":
+            self.feature_detector = cv2.SIFT()
+            index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+        elif self.method == "SURF":
+            self.feature_detector = cv2.SURF()
+            index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+        else:
+            self.feature_detector = cv2.ORB()
+            index_params= dict(algorithm = 6,
+                               table_number = 12,
+                               key_size = 12,
+                               multi_probe_level = 1)
+        search_params = dict(checks = 50)
+        self.flann = cv2.FlannBasedMatcher(index_params, search_params)
 
     def drawpoints(self,img1,img2,pts1,pts2):
         img1 = cv2.cvtColor(img1,cv2.COLOR_GRAY2BGR)
@@ -172,9 +176,10 @@ class DriftDetector:
         return R, t
 
     def get_homography_and_matches(self, first_kp, first_kp_desc,
-                                   second_kp, second_kp_desc, img1, img2):
+                                   second_kp, second_kp_desc, outlier, img1, img2):
         #Perform best matching between frames using nearest neighbors
         matches = self.flann.knnMatch(first_kp_desc, second_kp_desc, k = 2)
+        matches = matches[:1000]
 
         pts1 = []
         pts2 = []
@@ -201,6 +206,10 @@ class DriftDetector:
         pts2 = np.float32(pts2)
         #pts1 = pts1[proximity_mask.ravel() == 1]
         #pts2 = pts2[proximity_mask.ravel() == 1]
+        if outlier == "RANSAC":
+            G, mask = cv2.findHomography(pts1, pts2, cv2.RANSAC, 1.0)
+        elif outlier == "LMEDS":
+            G, mask = cv2.findHomography(pts1, pts2, cv2.LMEDS)
         G, mask = cv2.findHomography(pts1, pts2, cv2.RANSAC, 0.5)
 
         #Selecting the inliers alone
@@ -224,18 +233,31 @@ class DriftDetector:
 
         return G, first_set, second_set
 
-    def get_drift(self, first_kp, first_kp_desc, second_kp, second_kp_desc, img1, img2):
+    def get_drift(self, first_kp, first_kp_desc,
+                  second_kp, second_kp_desc, outlier_detection, img1, img2):
         #Find the homography between the pairs of points and the matches that fit
         G, first_set, second_set = self.get_homography_and_matches(first_kp,
                                                                    first_kp_desc,
                                                                    second_kp,
-                                                                   second_kp_desc, img1, img2)
+                                                                   second_kp_desc,
+                                                                   outlier_detection, img1, img2)
+
+        #Diagnostic Information
+        print "\nNumber of matched points using " + self.method + " and " + outlier_detection
 
         print "\nNumber of matched points using RANSAC"
         print len(first_set)
         print len(second_set)
         print "\nHomography computed"
         print G
+        print "\nDeterminant of Homography " + str(np.linalg.det(G))
+        tot_err = 0
+        for i in range(len(first_set)):
+            calc_pt = G.dot(np.float32(first_set[i]).T)
+            err = np.sqrt(np.square(calc_pt[0] - second_set[i][0]) + np.square(calc_pt[1] - second_set[i][1]))
+            tot_err += err
+        print "\nAverage Reprojection error: " + str(tot_err/len(first_set))
+
         solutions = self.decompose_homography(G)
         comp = solutions[0][0] + np.dot(np.float32(solutions[0][1]).T, np.float32(solutions[0][2]))
         roll = pitch = yaw = ""
@@ -244,11 +266,10 @@ class DriftDetector:
         #pitch = np.arctan2(-R[2][0],
         #                   np.sqrt(R[2][1]*R[2][1] + R[2][2]*R[2][2])) * 180/3.1415
         #roll = np.arctan2(R[1][0], R[0][0]) * 180/3.1415
-
         for R, t, n in solutions:
             yaw1 = np.arctan2(R[1][2], R[2][2]) * 180/3.1415
             pitch1 = np.arctan2(-R[2][0],
-                           np.sqrt(R[2][1]*R[2][1] + R[2][2]*R[2][2])) * 180/3.1415
+                                np.sqrt(R[2][1]*R[2][1] + R[2][2]*R[2][2])) * 180/3.1415
             roll1 = np.arctan2(R[1][0], R[0][0]) * 180/3.1415
 
             print "\nRoll: %f, Pitch: %f, Yaw: %f" %(roll1 , pitch1 , yaw1)
@@ -257,7 +278,7 @@ class DriftDetector:
 
     def analyze_frame(self, frame):
         grayscale = cv2.imread(frame, cv2.CV_LOAD_IMAGE_GRAYSCALE)
-        return self.sift.detectAndCompute(grayscale, None)
+        return self.feature_detector.detectAndCompute(grayscale, None)
 
 
 if __name__ == "__main__":
@@ -266,11 +287,11 @@ if __name__ == "__main__":
                                  [0, 788.17218714, 495.25800414],
                                  [0, 0, 1]])
 
-    instance = DriftDetector(cam_intrinsics)
-    img1 = "data/test_images/IMG_270.jpg"
-    img2 = "data/test_images/IMG_280.jpg"
+    instance = DriftDetector(cam_intrinsics, "SURF")
+    img1 = "data/test_images/IMG_205.jpg"
+    img2 = "data/test_images/IMG_235.jpg"
     print "\nComparing " + img1 + " and " + img2
     fkp, fkpd = instance.analyze_frame(img1)
     skp, skpd = instance.analyze_frame(img2)
-    r,p,y = instance.get_drift(fkp, fkpd, skp, skpd, img1, img2)
+    r,p,y = instance.get_drift(fkp, fkpd, skp, skpd, "LMEDS", img1, img2)
     #print "\n\nChosen Roll: %f, Pitch: %f, Yaw: %f" %(r, p, y)
