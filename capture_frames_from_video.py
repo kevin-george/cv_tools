@@ -1,35 +1,30 @@
 import cv2
-import sys
 
 
-def capture_frames(video):
+def capture_frames(video_file, image_format="jpg", verbose=False):
     """
-        This method captures all frames from a video and writes it to the current
-         directory
-     """
-    vid = cv2.VideoCapture(video)
+    This method captures all frames from a video and writes it to the current
+    directory
+    """
+    vid = cv2.VideoCapture(video_file)
     frame_num = 0
     while (vid.isOpened()):
         ret_val, frame = vid.read()
-        if not (ret_val):
+        if not ret_val:
             break
 
-        cv2.imwrite(str(frame_num) + ".jpg", frame)
+        cv2.imwrite("{}.{}".format(frame_num,image_format), frame)
         frame_num += 1
         if frame_num % 100 == 0:
-            print "Captured " + str(frame_num) + " frames."
+            if verbose:
+                print "Captured {} frames".format(frame_num)
 
     vid.release()
     if frame_num == 0:
-        print "The video is invalid"
+        print "The video is invalid!"
     else:
-        print "\nCaptured " + str(frame_num) + " frames and wrote to current directory"
+        print "\nCaptured {} frames and wrote to current directory".format(frame_num)
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print "Script usage: "
-        print "python capture_frames_from_video.py <video>"
-        sys.exit()
-
-    capture_frames(sys.argv[1])
+    capture_frames("./video.mp4", verbose=True)
