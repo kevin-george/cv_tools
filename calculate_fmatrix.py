@@ -7,6 +7,17 @@ from calibrate_camera import calibrate
 
 
 def draw_points(img1, img2, pts1, pts2):
+    """Draws the matching keypoints on the two images and numbers them
+    for ease of checking
+
+    Args:
+        img1: First image
+        img2: Second image
+        pts1: Matched keypoints in first image
+        pts2: Matched keypoints in second image
+    Returns:
+        None
+    """
     img1 = cv2.cvtColor(img1, cv2.COLOR_GRAY2BGR)
     img2 = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
     counter = 0
@@ -23,20 +34,22 @@ def draw_points(img1, img2, pts1, pts2):
 
 
 def check_solutions(fp, sp, K, R1, R2, t):
-    """
-    Using cv2.triangulatePoints to calculate position
+    """Using cv2.triangulatePoints to calculate position
     in real-world co-ordinate system. If z value for both
     points are positive, then that is our solution.
     More details can be found in the paper,
     David Nister, An efficient solution to the five-point relative pose problem.
-    TO-DO: Need to take care of points that are far away
-    :param fp:
-    :param sp:
-    :param K:
-    :param R1
-    :param R2:
-    :param t:
-    :return R,t:
+    TODO: Need to take care of points that are far away
+
+    Args:
+        fp: Set of matched points from first image 
+        sp: Set of matched points from second image
+        K: Calibration matrix
+        R1: First rotation matrix 
+        R2: Second rotation matrix
+        t: Translation vector
+    Returns:
+        R: Correct rotation matrix
     """
     dist = 50.0
     P0 = np.eye(3,4)
@@ -104,8 +117,26 @@ def check_solutions(fp, sp, K, R1, R2, t):
 
     return None
 
-def calculate_fundamental_matrix(image1, image2, K, dist_coeff,
+
+def calculate_fundamental_matrix(image1, image2, K,
                                  keypoint="SURF", outlier="LMEDS", draw_flag=False):
+    """Calculation of Fundamental matrix from two images that have
+    a valid epipolar geometry between them. Also decomposes the matrix to
+    a Rotational matrix and Translation vector.
+    TODO: Undistort points using distortion coefficient
+
+    Args:
+        image1: First image
+        image2: Second image
+        K: Calibration matrix
+        keypoint: Keypoint detection method SIFT/SURF/ORB
+        outlier: Outlier removal method RANSAC/LMEDS
+        draw_flag: Flag to display matched checkpoints on two images
+    Returns:
+        f_matrix: Fundamental Matrix
+        R: Rotational Matrix
+        t: Translation vector
+    """
     gray1 = cv2.imread(image1,cv2.CV_LOAD_IMAGE_GRAYSCALE)
     gray2 = cv2.imread(image2,cv2.CV_LOAD_IMAGE_GRAYSCALE)
 
@@ -197,7 +228,7 @@ def calculate_fundamental_matrix(image1, image2, K, dist_coeff,
         print "Possible Rs -> \n{}\n{}".format(R1, R2)
         return
     else:
-        return R, t
+        return f_matrix, R, t
 
 if __name__ == "__main__":
     # Obtain camera intrinsics using camera_calibration.py
@@ -207,4 +238,4 @@ if __name__ == "__main__":
     image1 = "../data/<name>.jpg"
     image2 = "../data/<name>.jpg"
 
-    R, t = calculate_fundamental_matrix(image1, image2, K, d_coeff)
+    f_matrix, R, t = calculate_fundamental_matrix(image1, image2, K)
