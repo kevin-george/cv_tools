@@ -2,9 +2,15 @@ import cv2
 
 
 def capture_frames(video_file, image_format="jpg", verbose=False):
-    """
-    This method captures all frames from a video and writes it to the current
+    """This method captures all frames from a video and writes it to the current
     directory
+
+    Args:
+        video_file: The video that needs to be processed
+        image_format: The format of the images to be saved
+        verbose: Flag to print debug statements
+    Returns:
+        None
     """
     vid = cv2.VideoCapture(video_file)
     frame_num = 0
